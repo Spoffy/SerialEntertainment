@@ -1,21 +1,33 @@
 import zmq
+
+import tv.lg as tv 
+from serialcontroller import open_serial_connection
 from config import address
 
 import os
 
-def handle_duck(data):
-  print("Ducks do a", data)
-
 def handle_set_input(data):
-  print("Setting input to " + data)
+  pass
 
 def handle_demonstrate(data):
   os.system("xdg-open /home/spoffy/Downloads/demonstrate.mp3")
 
+def handle_power(data):
+  device, state = data.split("&")
+  print("Setting", device, "to", state)
+  if device.lower() == "tv" or device.lower() == "television":
+    if state.lower() == "on":
+      with open_serial_connection() as ser:
+        tv.TV(ser).set_power(True)
+    elif state.lower() == "off":
+      with open_serial_connection() as ser:
+        tv.TV(ser).set_power(False)
+    
+
 handlers = dict()
-handlers["Ducks"] = handle_duck
 handlers["SetInput"] = handle_set_input
 handlers["Demonstrate"] = handle_demonstrate
+handlers["SetPower"] = handle_power
 
 def parse_command(message):
   pair = message.split(":")

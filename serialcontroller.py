@@ -1,16 +1,8 @@
 import serial
-import commands
+import tv.lg as tv
 from enum import Enum
 
-DellLabMonitor = {
-  "baudrate": 9600,
-  "bytesize": serial.EIGHTBITS,
-  "parity": serial.PARITY_NONE,
-  "stopbits": serial.STOPBITS_ONE,
-  "flowcontrol": False
-}
-
-def open_serial_connection(port = "/dev/ttyUSB0", settings = DellLabMonitor):
+def open_serial_connection(port = "/dev/ttyUSB0", settings = tv.serial_config):
   return serial.Serial("/dev/ttyUSB0"
                      , baudrate=settings["baudrate"]
                      , bytesize=settings["bytesize"]
@@ -19,14 +11,14 @@ def open_serial_connection(port = "/dev/ttyUSB0", settings = DellLabMonitor):
                      , xonxoff=settings["flowcontrol"]
                      , timeout=10)
 
-with open_serial_connection() as ser:
-  print(ser.name)
-  print(ser.is_open)
-  print("Writing")
-  print(commands.GetMonitorNameCommand().to_bytes())
-  #ser.write(commands.GetMonitorNameCommand().to_bytes())
-  ser.write(bytes([0x37, 0x51, 0x03, 0xEA, 0x20, 0x01, 0xAE]))
-  #ser.write(bytes.fromhex('375102eb20af'))
-  print("Reading")
-  print(ser.read(5).hex())
+def transmit_bytes(data):
+  with open_serial_connection() as ser:
+    ser.write(data)
 
+def debug():
+  with open_serial_connection() as ser:
+    data = tv.set_volume(40)
+    print(data.hex())
+    ser.write(tv.set_volume(90))
+    #ser.write(tv.power_on)
+    print(ser.read(7))
