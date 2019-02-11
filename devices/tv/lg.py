@@ -1,5 +1,7 @@
 import serial
 
+from ..serial_device import SerialDevice
+
 setid = 0x00
 
 INPUT_HDMI = 0b01110000
@@ -19,15 +21,17 @@ create_set_input_command = lambda data: command("x", "b", setid, data)
 #================= PUBLIC ===================
 #============================================
 
-serial_config = {
-  "baudrate": 9600,
-  "bytesize": serial.EIGHTBITS,
-  "parity": serial.PARITY_NONE,
-  "stopbits": serial.STOPBITS_ONE,
-  "flowcontrol": False
-}
 
-class TV():
+
+class MyLGTV(SerialDevice):
+  serial_config = {
+    "baudrate": 9600,
+    "bytesize": serial.EIGHTBITS,
+    "parity": serial.PARITY_NONE,
+    "stopbits": serial.STOPBITS_ONE,
+    "flowcontrol": False
+  }
+
   def __init__(self, serial_port):
     super().__init__(serial_port)
 

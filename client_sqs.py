@@ -1,6 +1,6 @@
 import credentials
 import boto3
-from zeromqclient import SerialClient
+from zmq_tools import ZeroMQClient
 
 # Amazon Setup
 #==============
@@ -18,7 +18,7 @@ queue = sqs.get_queue_by_name(QueueName="SerialEntertainment.fifo")
 
 # ZeroMQ Setup
 #==============
-client = SerialClient()
+client = ZeroMQClient()
 
 while True:
   for message in queue.receive_messages():

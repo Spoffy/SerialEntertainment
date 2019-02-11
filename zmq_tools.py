@@ -2,7 +2,7 @@ import zmq
 from config import address
 
 # Connect to ZeroMQ instance
-class SerialClient:
+class ZeroMQClient:
   def __init__(self):
     self.context = zmq.Context()
     self.socket = self.context.socket(zmq.REQ)
@@ -14,3 +14,9 @@ class SerialClient:
     if response != None:
       return True
     return False
+
+class ZeroMQServer:
+  def __init__(self):
+    self.context = zmq.Context()
+    self.socket = self.context.socket(zmq.REP)
+    self.socket.bind(address)
