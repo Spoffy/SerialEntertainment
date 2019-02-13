@@ -4,12 +4,25 @@ const util = require("util");
 
 var commandQueueUrl;
 
+const PushToCommandQueue = function (message) {
+		let deduplicationId = Date.now().toString() + message;
+		
+		sqs.sendMessage({
+			MessageBody: message,
+			QueueUrl: commandQueueUrl,
+			MessageGroupId: "SerialCommands",
+			MessageDeduplicationId: deduplicationId
+		}, (err, data) => {
+				console.log(err);
+		});
+}
+
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
         return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
     },
     handle(handlerInput) {
-        const speechText = 'Welcome, you can say Hello or Help. Which would you like to try?';
+        const speechText = 'Media Control open - what would you like to do?';
         return handlerInput.responseBuilder
             .speak(speechText)
             .reprompt(speechText)
@@ -23,16 +36,8 @@ const TestIntentRequestHandler = {
     },
     handle(handlerInput) {
         let body = "Testing4";
-        let deduplicationId = Date.now().toString() + body;
-        
-        sqs.sendMessage({
-          MessageBody: body,
-          QueueUrl: commandQueueUrl,
-          MessageGroupId: "SerialCommands",
-          MessageDeduplicationId: deduplicationId
-        }, (err, data) => {
-            console.log(err);
-        });
+
+				PushToCommandQueue(body);
 
         const speechText = 'Sending command';
         return handlerInput.responseBuilder
@@ -41,6 +46,68 @@ const TestIntentRequestHandler = {
             .getResponse();
     }
 };
+
+const SetInputRequestHandler = {
+    canHandle(handlerInput) {
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+            && handlerInput.requestEnvelope.request.intent.name === 'SetInput';
+    },
+    handle(handlerInput) {
+        let device_name = handlerInput.requestEnvelope.request.intent.slots.device.value;
+        let input_type = handlerInput.requestEnvelope.request.intent.slots.input_type.value;
+        let input_number = handlerInput.requestEnvelope.request.intent.slots.input_number.value;
+
+        let body = "SetInput:"+device_name+":"+input_type+":"+input_number;
+
+				PushToCommandQueue(body);
+       
+        const speechText = 'Setting input on ' + device_name + " to " + input_type + " " + input_number;
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
+            .getResponse();
+    }
+};
+
+const DemonstrateRequestHandler = {
+    canHandle(handlerInput) {
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+            && handlerInput.requestEnvelope.request.intent.name === 'Demonstrate';
+    },
+    handle(handlerInput) {
+        let body = "Demonstrate:";
+        
+				PushToCommandQueue(body);
+
+        const speechText = 'Beginning demonstration';
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
+            .getResponse();
+    }
+};
+
+const SetPowerRequestHandler = {
+    canHandle(handlerInput) {
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+            && handlerInput.requestEnvelope.request.intent.name === 'SetPower';
+    },
+    handle(handlerInput) {
+        let slots = handlerInput.requestEnvelope.request.intent.slots
+        let state = slots.state.value;
+        let device = slots.device.value;
+        let body = "SetPower:"+device+":"+state;
+        
+				PushToCommandQueue(body)
+
+        const speechText = 'Turning the ' + device + " " + state ;
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .withShouldEndSession(true)
+            .getResponse();
+    }
+};
+
 
 const HelpIntentHandler = {
     canHandle(handlerInput) {
@@ -98,6 +165,21 @@ const IntentReflectorHandler = {
     }
 };
 
+const FallbackHandler = {
+    canHandle() {
+        return true;
+    },
+    handle(handlerInput, error) {
+        console.log(`~~~~ Error handled: ${error.message}`);
+        const speechText = `Sorry, I didn't recognise that command. Please try again.`;
+
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt(speechText)
+            .getResponse();
+    }
+};
+
 // Generic error handling to capture any syntax or routing errors. If you receive an error
 // stating the request handler chain is not found, you have not implemented a handler for
 // the intent being invoked or included it in the skill builder below.
@@ -107,7 +189,7 @@ const ErrorHandler = {
     },
     handle(handlerInput, error) {
         console.log(`~~~~ Error handled: ${error.message}`);
-        const speechText = `Sorry, I couldn't understand what you said. Please try again.`;
+        const speechText = `Sorry, an error has occurred. Please try again.`;
 
         return handlerInput.responseBuilder
             .speak(speechText)
@@ -123,6 +205,9 @@ const ErrorHandler = {
 AWS.config.update({region: "eu-west-1"});
 
 var sqs = new AWS.SQS();
+var commandQueueUrl;
+
+const getQueueUrlPromised = util.promisify(sqs.getQueueUrl);
 
 var commandQueueUrlPromise = new Promise(function(resolve, reject) {
     sqs.getQueueUrl({QueueName: "SerialEntertainment.fifo"}, function(error, result) {
@@ -141,10 +226,15 @@ let skillHandler = Alexa.SkillBuilders.custom()
     .addRequestHandlers(
         LaunchRequestHandler,
         TestIntentRequestHandler,
+        SetPowerRequestHandler,
+        SetInputRequestHandler,
+        DemonstrateRequestHandler,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler,
-        IntentReflectorHandler) // make sure IntentReflectorHandler is last so it doesn't override your custom intent handlers
+				FallbackHandler
+        //IntentReflectorHandler) // make sure IntentReflectorHandler is last so it doesn't override your custom intent handlers
+        )
     .addErrorHandlers(
         ErrorHandler)
     .lambda();
