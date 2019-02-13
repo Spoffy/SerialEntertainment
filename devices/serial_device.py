@@ -11,3 +11,6 @@ class SerialDevice:
 
   def __init__(self, port):
     self.port = port
+
+  def transmit(self, data):
+    return self.port.write(data)

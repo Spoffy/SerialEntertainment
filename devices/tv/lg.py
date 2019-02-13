@@ -49,7 +49,7 @@ class MyLGTV(SerialDevice):
 
   def set_input(self, input_type, number):
     if input_type == "hdmi":
-      input_number = number - 1
+      input_number = int(number) - 1
       if input_number < 0 or input_number > 2:
         print("Unsupported HDMI input: " + str(number))
         return
