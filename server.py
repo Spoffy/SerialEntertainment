@@ -1,4 +1,5 @@
 import os
+import sys
 
 import devices.tv.lg
 import zmq_tools
@@ -104,12 +105,14 @@ server = zmq_tools.ZeroMQServer()
 print("Starting server listening on " + address)
 
 while True:
-  message = server.socket.recv_string()
-  server.socket.send_string("Command received")
-
-  command = parse_command(message)
   try:
+    message = server.socket.recv_string()
+    server.socket.send_string("Command received")
+
+    command = parse_command(message)
     dispatch_command(command)
   except FileNotFoundError:
-    print("File not found error - is the serial cable is connected?")
+    print("File not found error - is the serial cable is connected?", file=sys.stderr)
+  except Exception as e:
+    print("An exception occurred:\n", e, file=sys.stderr)
 
