@@ -1,0 +1,17 @@
+[Unit]
+Description=Fowards SQS messages to serial media control daemon
+After=serialentertainmentdaemon.service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=pi
+ExecStart=/usr/bin/env python3 -u /opt/SerialEntertainment/client_sqs.py
+
+StandardOutput=syslog
+StandardError=inherit
+SyslogIdentifier=SerialEntertainmentSQSClient
+
+[Install]
+WantedBy=multi-user.target

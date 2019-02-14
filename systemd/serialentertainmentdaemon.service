@@ -1,0 +1,16 @@
+[Unit]
+Description=Listens for media control commands then forwards them over serial
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=pi
+ExecStart=/usr/bin/env python3 -u /opt/SerialEntertainment/server.py
+
+StandardOutput=syslog
+StandardError=inherit
+SyslogIdentifier=SerialEntertainmentDaemon
+
+[Install]
+WantedBy=multi-user.target
